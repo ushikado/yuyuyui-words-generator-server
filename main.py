@@ -25,7 +25,11 @@ def process_options(request):
     return ('', 204, headers)
 
 
+model_dict = {}
+
+
 def process_post(request):
+    global model_dict
     headers = {
         'Content-Type':'application/json',
         'Access-Control-Allow-Origin': 'https://ushikado.github.io',
@@ -42,8 +46,11 @@ def process_post(request):
         # Bad Request
         return ("", 400, headers)
 
-    with gzip.open(model_path, 'rb') as fp:
-        model = markovify.NewlineText.from_dict(pickle.load(fp))
+    # キャッシュがなければモデルを読み込む
+    if character not in model_dict:
+        with gzip.open(model_path, 'rb') as fp:
+            model_dict[character] = markovify.NewlineText.from_dict(pickle.load(fp))
+    model = model_dict[character]
     
     sentence = model.make_short_sentence(max_chars=120, min_words=1, tries=100)
     text = "".join(sentence.split()).replace("!", "！").replace("?", " ？")
