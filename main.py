@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import gzip
 import pickle
 import markovify
 
@@ -35,17 +36,17 @@ def process_post(request):
         request_dict = request.get_json(silent=True)
         character = request_dict["character"]
         assert type(character) is str
-        model_path = "models/" + character + ".pkl"
+        model_path = "models/" + character + ".pkl.gz"
         assert os.path.isfile(model_path)
     except:
         # Bad Request
         return ("", 400, headers)
 
-    with open(model_path, 'rb') as fp:
+    with gzip.open(model_path, 'rb') as fp:
         model = markovify.NewlineText.from_dict(pickle.load(fp))
     
     sentence = model.make_short_sentence(max_chars=120, min_words=1, tries=100)
-    text = "".join(sentence.split())
+    text = "".join(sentence.split()).replace("!", "！").replace("?", " ？")
      
     # make response
     response = [character, text]
@@ -66,4 +67,4 @@ if __name__ == "__main__":
         def get_json(self, silent=True):
             return {"character": self.character}
 
-    print(main(TestRequest("結城 友奈")))
+    print(main(TestRequest("結城 友奈"))[0])
